@@ -364,6 +364,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Trigger prediction to draw steps
         triggerEvaluation();
+        
+        // Refresh dashboard to display scatter plot with correct trend line
+        if (authToken && userRole === "teacher") {
+          loadDashboard();
+        }
       }
     } catch (e) {
       console.error("Failed to load cached model:", e);
@@ -457,6 +462,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update dynamic calculation details
     renderMathSteps(att, study, sleep, stress, prev, score);
+
+    // Update goal optimizer output in real-time
+    optimizeGoal();
   }
 
   function localPredict(att, study, sleep, stress, prev) {
@@ -717,6 +725,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dashAvgScore.textContent = "0.0%";
         dashAtRisk.textContent = "0";
         dashRecentTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No student logs recorded yet. Go to Predictor tab to start.</td></tr>`;
+        renderScatterPlot([]);
+        renderInterventions([]);
         return;
       }
 
@@ -753,6 +763,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }).join("");
 
       dashRecentTbody.innerHTML = rows;
+
+      // Render advanced data analytics & outreach panels
+      renderScatterPlot(students);
+      renderInterventions(students);
 
     } catch (e) {
       console.error("Dashboard statistics loading failed:", e);
@@ -909,6 +923,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         cachedModel = data.model;
         loadModelConsole();
+        loadDashboard(); // Refresh scatter plot trend line
         alert("Success: OLS regression coefficients successfully updated based on your student directory records!");
       } else {
         alert(data.error || "Training failed.");
@@ -921,6 +936,384 @@ document.addEventListener("DOMContentLoaded", () => {
       modelStatusLbl.textContent = "Active Mode";
     }
   });
+
+  // ==========================================================================
+  // ADVANCED ANALYTICS & INTERVENTIONS (V3 ADDITIONS)
+  // ==========================================================================
+
+  // Scatter plot tooltip helper variables
+  let scatterTooltip = document.getElementById("scatter-tooltip");
+  if (!scatterTooltip) {
+    scatterTooltip = document.createElement("div");
+    scatterTooltip.id = "scatter-tooltip";
+    scatterTooltip.style.position = "absolute";
+    scatterTooltip.style.pointerEvents = "none";
+    scatterTooltip.style.padding = "0.5rem 0.75rem";
+    scatterTooltip.style.backgroundColor = "var(--bg-card)";
+    scatterTooltip.style.border = "1px solid var(--border-color)";
+    scatterTooltip.style.borderRadius = "8px";
+    scatterTooltip.style.boxShadow = "var(--shadow-md)";
+    scatterTooltip.style.fontSize = "0.75rem";
+    scatterTooltip.style.fontFamily = "var(--font-body)";
+    scatterTooltip.style.color = "var(--text-primary)";
+    scatterTooltip.style.zIndex = "1000";
+    scatterTooltip.style.opacity = "0";
+    scatterTooltip.style.transition = "opacity 0.15s ease";
+    document.body.appendChild(scatterTooltip);
+  }
+
+  function showTooltip(event, name, studyHours, grade) {
+    scatterTooltip.innerHTML = `
+      <strong style="color:var(--color-primary-glow-solid)">${name}</strong><br>
+      Study Time: ${studyHours} hrs/wk<br>
+      Predicted: <strong>${grade.toFixed(1)}%</strong>
+    `;
+    scatterTooltip.style.left = `${event.pageX + 10}px`;
+    scatterTooltip.style.top = `${event.pageY - 40}px`;
+    scatterTooltip.style.opacity = "1";
+  }
+
+  function hideTooltip() {
+    scatterTooltip.style.opacity = "0";
+  }
+
+  // Draw class scatter plot with dynamic trend slope
+  function renderScatterPlot(students) {
+    const svg = document.getElementById("dash-scatter-plot");
+    if (!svg) return;
+
+    svg.innerHTML = "";
+
+    const width = 500;
+    const height = 230;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+    const paddingLeft = 45;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 35;
+
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+
+    const getX = (studyHours) => paddingLeft + (Math.min(40, Math.max(0, studyHours)) / 40) * chartWidth;
+    const getY = (grade) => paddingTop + chartHeight - (Math.min(100, Math.max(0, grade)) / 100) * chartHeight;
+
+    // Draw horizontal grid lines (Y-axis grades: 0 to 100)
+    for (let g = 0; g <= 100; g += 20) {
+      const yVal = getY(g);
+      
+      const gridLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      gridLine.setAttribute("x1", paddingLeft);
+      gridLine.setAttribute("y1", yVal);
+      gridLine.setAttribute("x2", width - paddingRight);
+      gridLine.setAttribute("y2", yVal);
+      gridLine.setAttribute("stroke", "var(--border-color)");
+      gridLine.setAttribute("stroke-dasharray", "3,3");
+      gridLine.setAttribute("stroke-width", "1");
+      svg.appendChild(gridLine);
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", paddingLeft - 8);
+      text.setAttribute("y", yVal + 4);
+      text.setAttribute("text-anchor", "end");
+      text.setAttribute("fill", "var(--text-muted)");
+      text.setAttribute("font-size", "10px");
+      text.setAttribute("font-family", "var(--font-body)");
+      text.textContent = `${g}%`;
+      svg.appendChild(text);
+    }
+
+    // Draw vertical grid lines (X-axis hours: 0 to 40)
+    for (let sh = 0; sh <= 40; sh += 10) {
+      const xVal = getX(sh);
+      
+      const gridLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      gridLine.setAttribute("x1", xVal);
+      gridLine.setAttribute("y1", paddingTop);
+      gridLine.setAttribute("x2", xVal);
+      gridLine.setAttribute("y2", paddingTop + chartHeight);
+      gridLine.setAttribute("stroke", "var(--border-color)");
+      gridLine.setAttribute("stroke-dasharray", "3,3");
+      gridLine.setAttribute("stroke-width", "1");
+      svg.appendChild(gridLine);
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", xVal);
+      text.setAttribute("y", paddingTop + chartHeight + 15);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("fill", "var(--text-muted)");
+      text.setAttribute("font-size", "10px");
+      text.setAttribute("font-family", "var(--font-body)");
+      text.textContent = `${sh}h`;
+      svg.appendChild(text);
+    }
+
+    // Draw coordinate axes lines
+    const xAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    xAxis.setAttribute("x1", paddingLeft);
+    xAxis.setAttribute("y1", paddingTop + chartHeight);
+    xAxis.setAttribute("x2", width - paddingRight);
+    xAxis.setAttribute("y2", paddingTop + chartHeight);
+    xAxis.setAttribute("stroke", "var(--text-muted)");
+    xAxis.setAttribute("stroke-width", "1.5");
+    svg.appendChild(xAxis);
+
+    const yAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    yAxis.setAttribute("x1", paddingLeft);
+    yAxis.setAttribute("y1", paddingTop);
+    yAxis.setAttribute("x2", paddingLeft);
+    yAxis.setAttribute("y2", paddingTop + chartHeight);
+    yAxis.setAttribute("stroke", "var(--text-muted)");
+    yAxis.setAttribute("stroke-width", "1.5");
+    svg.appendChild(yAxis);
+
+    // Overlay best-fit slope regression line
+    if (cachedModel && cachedModel.weights && cachedModel.weights.length > 0) {
+      let avgAtt = 85;
+      let avgSleep = 8;
+      let avgStress = 4;
+      let avgMidterm = 75;
+
+      if (students.length > 0) {
+        avgAtt = students.reduce((sum, s) => sum + s.attendance, 0) / students.length;
+        avgSleep = students.reduce((sum, s) => sum + s.sleepHours, 0) / students.length;
+        avgStress = students.reduce((sum, s) => sum + s.stressLevel, 0) / students.length;
+        avgMidterm = students.reduce((sum, s) => sum + s.prevGrade, 0) / students.length;
+      }
+
+      const predictWithStudy = (study) => {
+        let val = cachedModel.intercept;
+        val += avgAtt * cachedModel.weights[0];
+        val += study * cachedModel.weights[1];
+        val += avgSleep * cachedModel.weights[2];
+        val += avgStress * cachedModel.weights[3];
+        val += avgMidterm * cachedModel.weights[4];
+        return Math.max(0, Math.min(100, val));
+      };
+
+      const trendLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      trendLine.setAttribute("x1", getX(0));
+      trendLine.setAttribute("y1", getY(predictWithStudy(0)));
+      trendLine.setAttribute("x2", getX(40));
+      trendLine.setAttribute("y2", getY(predictWithStudy(40)));
+      trendLine.setAttribute("stroke", "var(--color-secondary)");
+      trendLine.setAttribute("stroke-width", "3");
+      trendLine.setAttribute("stroke-linecap", "round");
+      trendLine.setAttribute("opacity", "0.85");
+      svg.appendChild(trendLine);
+    }
+
+    // Render students dots
+    students.forEach(s => {
+      const cx = getX(s.studyHours);
+      const cy = getY(s.finalGrade);
+
+      const isPass = s.finalGrade >= 60.0;
+      const isWarning = s.finalGrade >= 60.0 && s.finalGrade < 75.0;
+      let dotColor = "var(--color-success)";
+      if (!isPass) dotColor = "var(--color-danger)";
+      else if (isWarning) dotColor = "var(--color-warning)";
+
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", cx);
+      circle.setAttribute("cy", cy);
+      circle.setAttribute("r", "6");
+      circle.setAttribute("fill", dotColor);
+      circle.setAttribute("stroke", "var(--bg-card)");
+      circle.setAttribute("stroke-width", "1.5");
+      circle.style.transition = "transform 0.2s, r 0.2s";
+      circle.style.cursor = "pointer";
+
+      circle.addEventListener("mouseenter", (e) => {
+        circle.setAttribute("r", "9");
+        showTooltip(e, s.name, s.studyHours, s.finalGrade);
+      });
+
+      circle.addEventListener("mouseleave", () => {
+        circle.setAttribute("r", "6");
+        hideTooltip();
+      });
+
+      svg.appendChild(circle);
+    });
+  }
+
+  // Intervention list alerts rendering
+  function renderInterventions(students) {
+    const listContainer = document.getElementById("dash-intervention-list");
+    if (!listContainer) return;
+
+    listContainer.innerHTML = "";
+
+    const criticalStudents = students.filter(s => s.finalGrade < 60);
+
+    if (criticalStudents.length === 0) {
+      listContainer.innerHTML = `
+        <div style="text-align:center; padding:1.25rem 0; color:var(--text-muted); font-size:0.8rem;">
+          No intervention alerts. All student progress is passing.
+        </div>
+      `;
+      return;
+    }
+
+    criticalStudents.forEach(s => {
+      const item = document.createElement("div");
+      item.style.display = "flex";
+      item.style.justifyContent = "space-between";
+      item.style.alignItems = "center";
+      item.style.padding = "0.5rem 0.75rem";
+      item.style.backgroundColor = "var(--bg-card)";
+      item.style.border = "1px solid var(--border-color)";
+      item.style.borderRadius = "8px";
+      item.style.fontSize = "0.8rem";
+
+      item.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:0.15rem;">
+          <strong style="color:var(--text-primary)">${s.name}</strong>
+          <span style="color:var(--text-muted); font-size:0.7rem;">Expected: <strong style="color:var(--color-danger);">${s.finalGrade.toFixed(1)}%</strong> | Attendance: ${s.attendance}%</span>
+        </div>
+        <button class="btn btn-secondary btn-sm outreach-btn" data-id="${s.id}" style="padding:0.25rem 0.5rem; display:inline-flex; gap:0.25rem; align-items:center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Outreach
+        </button>
+      `;
+
+      item.querySelector(".outreach-btn").addEventListener("click", () => {
+        openOutreachModal(s);
+      });
+
+      listContainer.appendChild(item);
+    });
+  }
+
+  // Opens communication popups for academic counselors
+  function openOutreachModal(student) {
+    const emailModal = document.getElementById("email-modal");
+    const emailTo = document.getElementById("email-to-input");
+    const emailSubject = document.getElementById("email-subject-input");
+    const emailBody = document.getElementById("email-body-text");
+    const btnMailto = document.getElementById("btn-send-mailto");
+
+    if (!emailModal) return;
+
+    const recipient = `${student.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@academy.edu`;
+    const subject = `Academic Support Advisory: EduPredict Intervention Plan`;
+    const bodyText = `Dear ${student.name},
+
+I am writing to share your current performance outlook in our course. According to our EduPredict analytics dashboard, your projected final grade is estimated at ${student.finalGrade.toFixed(1)}%, which is below the passing threshold.
+
+Here is a summary of your current learning metrics:
+- Attendance Rate: ${student.attendance}%
+- Weekly Study Time: ${student.studyHours} hours
+- Midterm Grade: ${student.prevGrade}%
+
+To support your academic success, we recommend developing a study plan targeting at least ${Math.max(12, student.studyHours + 6)} hours per week. Additionally, we encourage you to schedule a brief check-in during office hours this week so we can review key concepts together.
+
+Let's work together to help you succeed in this course!
+
+Best regards,
+Professor / Advisor`;
+
+    emailTo.value = recipient;
+    emailSubject.value = subject;
+    emailBody.value = bodyText;
+
+    const mailtoHref = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    btnMailto.setAttribute("href", mailtoHref);
+
+    emailModal.classList.remove("hidden");
+    emailModal.style.display = "flex";
+  }
+
+  // Goal optimization linear algebra calculator
+  function optimizeGoal() {
+    const resultDiv = document.getElementById("goal-optimizer-result");
+    const targetGradeInput = document.getElementById("target-grade-input");
+    if (!resultDiv || !targetGradeInput || !cachedModel) return;
+
+    const targetGrade = parseFloat(targetGradeInput.value);
+    if (isNaN(targetGrade) || targetGrade < 0 || targetGrade > 100) {
+      resultDiv.innerHTML = `<span style="color:var(--color-danger)">Please enter a valid target grade between 0% and 100%.</span>`;
+      return;
+    }
+
+    const att = parseFloat(attendanceNum.value);
+    const sleep = parseFloat(sleepNum.value);
+    const stress = parseFloat(stressNum.value);
+    const prev = parseFloat(prevGradeNum.value);
+
+    const b0 = cachedModel.intercept;
+    const w = cachedModel.weights;
+
+    // Beta coefficient for study hours is weights[1]
+    const betaStudy = w[1];
+
+    if (Math.abs(betaStudy) < 1e-5) {
+      resultDiv.innerHTML = `<span style="color:var(--color-warning)">Goal simulation unavailable: Study hours impact is close to zero.</span>`;
+      return;
+    }
+
+    const sumOthers = b0 + att * w[0] + sleep * w[2] + stress * w[3] + prev * w[4];
+    const reqStudy = (targetGrade - sumOthers) / betaStudy;
+
+    if (reqStudy < 0) {
+      const gradeAtZeroStudy = sumOthers;
+      resultDiv.innerHTML = `
+        <span style="color:var(--color-success); font-weight:600">Goal Met easily!</span><br>
+        Based on other factors, your predicted grade is <strong>${Math.min(100, gradeAtZeroStudy).toFixed(1)}%</strong> even with <strong>0 hours</strong> of study/week.
+      `;
+    } else if (reqStudy > 40) {
+      resultDiv.innerHTML = `
+        <span style="color:var(--color-danger); font-weight:600">Warning: Target Unreachable by study alone!</span><br>
+        To achieve ${targetGrade.toFixed(1)}%, you need to study <strong>${reqStudy.toFixed(1)} hours/week</strong>, which exceeds healthy limits.
+        Please improve other factors: increase attendance or reduce stress.
+      `;
+    } else {
+      resultDiv.innerHTML = `
+        To achieve a target grade of <strong>${targetGrade.toFixed(1)}%</strong>, you need to study at least <strong>${reqStudy.toFixed(1)} hours/week</strong>, keeping other metrics constant.
+      `;
+    }
+  }
+
+  // Setup email modal listeners
+  const btnCloseEmailModal = document.getElementById("btn-close-email-modal");
+  if (btnCloseEmailModal) {
+    btnCloseEmailModal.addEventListener("click", () => {
+      const emailModal = document.getElementById("email-modal");
+      emailModal.classList.add("hidden");
+      emailModal.style.display = "none";
+    });
+  }
+
+  const btnCopyEmail = document.getElementById("btn-copy-email");
+  if (btnCopyEmail) {
+    btnCopyEmail.addEventListener("click", () => {
+      const emailBody = document.getElementById("email-body-text");
+      emailBody.select();
+      emailBody.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(emailBody.value).then(() => {
+        const originalText = btnCopyEmail.textContent;
+        btnCopyEmail.textContent = "Copied! ✓";
+        btnCopyEmail.style.backgroundColor = "var(--color-success)";
+        btnCopyEmail.style.color = "white";
+        setTimeout(() => {
+          btnCopyEmail.textContent = originalText;
+          btnCopyEmail.style.backgroundColor = "";
+          btnCopyEmail.style.color = "";
+        }, 1500);
+      }).catch(err => {
+        alert("Failed to copy text automatically. Please select and copy manually.");
+      });
+    });
+  }
+
+  const btnOptimizeGoal = document.getElementById("btn-optimize-goal");
+  if (btnOptimizeGoal) {
+    btnOptimizeGoal.addEventListener("click", () => {
+      optimizeGoal();
+    });
+  }
 
   // Start checking session
   checkSessionOnLoad();

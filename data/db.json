@@ -17,6 +17,15 @@
       "name": "Teacher",
       "role": "teacher",
       "createdAt": "2026-06-19T18:41:45.463Z"
+    },
+    {
+      "id": "USR-1781897279063-220",
+      "username": "teacher101",
+      "email": "teacher101@test.com",
+      "passwordHash": "008c70392e3abfbd0fa47bbc2ed96aa99bd49e159727fcba0f2e6abeb3a9d601",
+      "name": "Teacher Tester",
+      "role": "teacher",
+      "createdAt": "2026-06-19T19:27:59.063Z"
     }
   ],
   "students": [
@@ -622,15 +631,15 @@
     }
   ],
   "model": {
-    "intercept": 28.54,
     "weights": [
-      0.3,
-      0.58,
-      1.1,
-      -0.52,
-      0.22
+      0.2997957856820719,
+      0.5865584080956978,
+      1.0997808851598165,
+      -0.5233600926723057,
+      0.21876953143441824
     ],
-    "r2": 0.89,
-    "mse": 4.85
+    "intercept": 28.60695691266085,
+    "r2": 0.9999804602352884,
+    "mse": 0.0005966569543042882
   }
 }

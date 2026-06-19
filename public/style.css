@@ -10,22 +10,22 @@
   --font-body: 'Inter', sans-serif;
 
   /* Theme Colors: Light Mode (Default for accessibility) */
-  --bg-app: hsl(210, 40%, 96%);
-  --bg-sidebar: hsl(220, 20%, 90%);
+  --bg-app: hsl(260, 60%, 98%);
+  --bg-sidebar: hsl(260, 40%, 94%);
   --bg-card: hsl(0, 0%, 100%);
-  --bg-card-hover: hsl(210, 40%, 98%);
+  --bg-card-hover: hsl(260, 50%, 99%);
   
-  --border-color: hsl(214, 25%, 85%);
-  --border-focus: hsl(250, 70%, 55%);
+  --border-color: hsl(260, 30%, 90%);
+  --border-focus: hsl(262, 92%, 62%);
   
-  --text-primary: hsl(222, 47%, 12%);
-  --text-muted: hsl(215, 25%, 42%);
-  --text-placeholder: hsl(215, 16%, 60%);
+  --text-primary: hsl(260, 50%, 15%);
+  --text-muted: hsl(260, 20%, 45%);
+  --text-placeholder: hsl(260, 15%, 60%);
 
-  --color-primary: hsl(250, 70%, 55%);
-  --color-primary-glow: hsla(250, 70%, 55%, 0.15);
-  --color-primary-glow-solid: hsl(250, 70%, 45%);
-  --color-secondary: hsl(320, 70%, 50%);
+  --color-primary: hsl(262, 92%, 62%);
+  --color-primary-glow: hsla(262, 92%, 62%, 0.12);
+  --color-primary-glow-solid: hsl(262, 85%, 55%);
+  --color-secondary: hsl(12, 95%, 65%);
 
   --color-success: hsl(142, 60%, 40%);
   --color-success-bg: hsla(142, 60%, 40%, 0.1);
@@ -43,22 +43,22 @@
 
 /* Dark Mode Variables */
 [data-theme="dark"] {
-  --bg-app: hsl(222, 47%, 9%);
-  --bg-sidebar: hsl(222, 47%, 6%);
-  --bg-card: hsla(222, 47%, 14%, 0.9);
-  --bg-card-hover: hsla(222, 47%, 18%, 0.95);
+  --bg-app: hsl(260, 40%, 8%);
+  --bg-sidebar: hsl(260, 45%, 5%);
+  --bg-card: hsla(260, 30%, 13%, 0.75);
+  --bg-card-hover: hsla(260, 30%, 17%, 0.85);
   
-  --border-color: hsla(222, 47%, 25%, 0.4);
-  --border-focus: hsl(250, 89%, 65%);
+  --border-color: hsla(260, 30%, 25%, 0.4);
+  --border-focus: hsl(262, 92%, 68%);
   
-  --text-primary: hsl(210, 40%, 98%);
-  --text-muted: hsl(215, 20%, 75%);
-  --text-placeholder: hsl(215, 15%, 55%);
+  --text-primary: hsl(260, 30%, 98%);
+  --text-muted: hsl(260, 15%, 78%);
+  --text-placeholder: hsl(260, 15%, 55%);
 
-  --color-primary: hsl(250, 89%, 65%);
-  --color-primary-glow: hsla(250, 89%, 65%, 0.25);
-  --color-primary-glow-solid: hsl(250, 89%, 65%);
-  --color-secondary: hsl(320, 89%, 60%);
+  --color-primary: hsl(262, 92%, 68%);
+  --color-primary-glow: hsla(262, 92%, 68%, 0.22);
+  --color-primary-glow-solid: hsl(262, 92%, 68%);
+  --color-secondary: hsl(12, 95%, 65%);
 
   --color-success: hsl(142, 70%, 45%);
   --color-success-bg: hsla(142, 70%, 45%, 0.15);
@@ -814,4 +814,70 @@ table.simple-table th {
   border: 1px solid var(--color-danger);
   text-shadow: 0 0 4px var(--color-danger-bg);
 }
+
+/* ==========================================================================
+   ADVANCED ANALYTICS & INTERVENTIONS (V3 VISUAL SYSTEM)
+   ========================================================================== */
+
+#dash-scatter-plot text {
+  font-family: var(--font-body);
+  user-select: none;
+}
+
+#dash-scatter-plot line {
+  transition: all 0.3s ease;
+}
+
+#dash-scatter-plot circle {
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+#dash-scatter-plot circle:hover {
+  filter: drop-shadow(0px 4px 8px var(--color-primary-glow-solid));
+}
+
+/* Outreach modal animations */
+#email-modal {
+  backdrop-filter: blur(8px);
+  animation: modalFadeIn 0.3s ease forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; background: rgba(0,0,0,0); }
+  to { opacity: 1; background: rgba(0,0,0,0.6); }
+}
+
+#email-modal .card {
+  animation: cardSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes cardSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Tooltip styled class override */
+#scatter-tooltip {
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Outreach lists alerts hover */
+.outreach-btn {
+  background-color: var(--color-primary-glow);
+  color: var(--color-primary-glow-solid);
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.outreach-btn:hover {
+  background-color: var(--color-primary-glow-solid);
+  color: white;
+  transform: translateY(-1px);
+}
+
 

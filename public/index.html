@@ -198,16 +198,24 @@
             </div>
           </div>
 
-          <!-- Quick Tip Panel -->
-          <div class="card panel-tip">
-            <h3 class="card-title" style="color:var(--color-primary-glow-solid)">Portal Overview</h3>
-            <p>Welcome to <strong>EduPredict</strong>. This database tracks student profiles and computes final grade projections using a multiple linear regression algorithm.</p>
-            <p style="margin-top:0.75rem"><strong>Next Steps:</strong></p>
-            <ul style="margin-left: 1.25rem; margin-top:0.5rem; font-size:0.85rem; display:flex; flex-direction:column; gap:0.35rem">
-              <li>Open the <strong>Predictor Tool</strong> to evaluate a student.</li>
-              <li>Save student evaluation cards to persist them in your directory.</li>
-              <li>Head to the <strong>ML Model Console</strong> once you have at least 6 students to train coefficients tailored to your classroom's behaviors!</li>
-            </ul>
+          <!-- Intervention Hub Panel -->
+          <div class="card panel-tip" id="dash-intervention-card" style="display:flex; flex-direction:column; gap:0.5rem;">
+            <h3 class="card-title" style="color:var(--color-danger)">Intervention Alerts</h3>
+            <span class="predictor-desc" style="display:block; font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Students predicted to fail (&lt; 60%)</span>
+            <div style="display:flex; flex-direction:column; gap:0.5rem; max-height:160px; overflow-y:auto;" id="dash-intervention-list">
+              <!-- Render interventions dynamically -->
+            </div>
+          </div>
+
+          <!-- Interactive Scatter Plot Card -->
+          <div class="card" id="dash-scatter-plot-card" style="grid-column: span 2; display:flex; flex-direction:column; gap:0.75rem;">
+            <div class="card-header" style="margin-bottom:0.25rem;">
+              <h3 class="card-title">Class Distribution & ML Trend</h3>
+              <span class="predictor-desc">Study Hours vs Expected Score (Linear Best-Fit Slope)</span>
+            </div>
+            <div style="position:relative; height:230px; width:100%;">
+              <svg id="dash-scatter-plot" style="width:100%; height:100%; overflow:visible;"></svg>
+            </div>
           </div>
         </div>
       </section>
@@ -327,7 +335,28 @@
                 </div>
               </div>
             </div>
-          </div>
+
+            <!-- Target Grade Simulator -->
+            <div class="card" style="margin-top: 1rem; text-align: left;">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-secondary)"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+                  Target Grade Simulator
+                </h3>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <div class="form-group">
+                  <label for="target-grade-input" style="font-size:0.75rem;">Desired Final Grade (%)</label>
+                  <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                    <input type="number" id="target-grade-input" class="input-number" min="0" max="100" value="85" style="flex-grow:1; text-align:left; padding:0.5rem 0.75rem; font-size:0.9rem; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-app); color:var(--text-primary); outline:none;">
+                    <button class="btn btn-sm" id="btn-optimize-goal">Simulate Goal</button>
+                  </div>
+                </div>
+                <div id="goal-optimizer-result" style="font-size: 0.8rem; line-height:1.4; color:var(--text-muted); background:rgba(0,0,0,0.02); padding:0.6rem; border-radius:6px; min-height:40px;">
+                  Enter a target grade above to calculate required study hours.
+                </div>
+              </div>
+            </div>
 
             <!-- What-if sensitivity -->
             <div class="card">
@@ -490,6 +519,32 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- Outreach Email Modal -->
+  <div class="auth-wrapper hidden" id="email-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center; padding:1.5rem;">
+    <div class="card" style="width:100%; max-width:550px; background-color:var(--bg-card); display:flex; flex-direction:column; gap:1.25rem; box-shadow:var(--shadow-lg);">
+      <div class="card-header">
+        <h3 class="card-title" style="color:var(--color-primary-glow-solid)">Support Outreach Email</h3>
+        <button class="btn btn-secondary btn-sm" id="btn-close-email-modal" style="padding:0.25rem 0.5rem;">✕</button>
+      </div>
+      <div class="form-group">
+        <label for="email-to-input">Recipient Email</label>
+        <input type="text" id="email-to-input" style="width: 100%; padding:0.65rem; border:1px solid var(--border-color); border-radius:8px; background-color:var(--bg-app); color:var(--text-primary);" readonly>
+      </div>
+      <div class="form-group">
+        <label for="email-subject-input">Subject Line</label>
+        <input type="text" id="email-subject-input" style="width: 100%; padding:0.65rem; border:1px solid var(--border-color); border-radius:8px; background-color:var(--bg-app); color:var(--text-primary);" readonly>
+      </div>
+      <div class="form-group">
+        <label for="email-body-text">Message Draft</label>
+        <textarea id="email-body-text" style="width: 100%; height:170px; padding:0.75rem; border:1px solid var(--border-color); border-radius:8px; background-color:var(--bg-app); color:var(--text-primary); font-family:var(--font-body); font-size:0.85rem; line-height:1.4; outline:none; resize:none;"></textarea>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.25rem;">
+        <button class="btn btn-secondary" id="btn-copy-email">Copy Message</button>
+        <a href="" id="btn-send-mailto" class="btn" style="text-decoration:none;">Open Mail App</a>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
