@@ -1,0 +1,13 @@
+{
+  "name": "edupredict-fullstack",
+  "version": "1.0.0",
+  "description": "Full-stack Student Performance Predictor and ML Center",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
